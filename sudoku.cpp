@@ -1,264 +1,318 @@
-﻿#include <iostream>
-#include <fstream>
+#include <iostream>
 #include <vector>
-#include <cstdlib>
+#include <algorithm>
 #include <ctime>
-#include <cstring>
+#include <random>
+#include <fstream>
 #include <string>
-
-const int SIZE = 9;
-const int MIN_HOLES = 20;
-const int MAX_HOLES = 55;
-
-// 检查在指定位置是否可以放置数字num
-bool isValid(const std::vector<std::vector<int>>& board, int row, int col, int num) {
-    // 检查行和列
-    for (int i = 0; i < SIZE; i++) {
-        if (board[row][i] == num || board[i][col] == num) {
-            return false;
-        }
+#include <cstdlib>
+std::vector<std::vector<char>> readBoardFromFile(const std::string& filePath) {
+    std::vector<std::vector<char>> board;
+    std::ifstream inFile(filePath);
+    if (!inFile) {
+        std::cerr << "Error: Failed to open file for reading." << std::endl;
+        return board;
     }
 
-    // 检查所在的九宫格
-    int startRow = row - row % 3;
-    int startCol = col - col % 3;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (board[startRow + i][startCol + j] == num) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-// 使用回溯法求解数独问题
-bool solveSudoku(std::vector<std::vector<int>>& board) {
-    for (int row = 0; row < SIZE; row++) {
-        for (int col = 0; col < SIZE; col++) {
-            if (board[row][col] == 0) {
-                for (int num = 1; num <= SIZE; num++) {
-                    if (isValid(board, row, col, num)) {
-                        board[row][col] = num;
-                        if (solveSudoku(board)) {
-                            return true;
-                        }
-                        board[row][col] = 0;  // 回溯
-                    }
-                }
-                return false;
-            }
-        }
-    }
-    return true;  // 数独已解
-}
-
-// 生成随机数独终局
-void generateSudoku(std::vector<std::vector<int>>& board) {
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-
-    // 初始化数独棋盘
-    for (int i = 0; i < SIZE; i++) {
-        std::vector<int> row;
-        for (int j = 0; j < SIZE; j++) {
-            row.push_back(0);
+    std::string line;
+    while (std::getline(inFile, line)) {
+        std::vector<char> row;
+        for (char cell : line) {
+            if (cell != '$') row.push_back(cell);
         }
         board.push_back(row);
     }
 
-    // 填充数独棋盘
-    solveSudoku(board);
-}
-
-// 随机挖洞
-void createHoles(std::vector<std::vector<int>>& board, int holes) {
-    while (holes > 0) {
-        int row = std::rand() % SIZE;
-        int col = std::rand() % SIZE;
-        if (board[row][col] != 0) {
-            board[row][col] = 0;
-            holes--;
-        }
-    }
-}
-
-// 打印数独棋盘
-void printSudoku(const std::vector<std::vector<int>>& board) {
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
-            std::cout << board[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-//
-// 将数独问题保存到文件
-void saveSudokuToFile(const std::vector<std::vector<int>>& board, const std::string& filename) {
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        for (int i = 0; i < SIZE; i++) {
-            for (int j = 0; j < SIZE; j++) {
-                file << board[i][j] << " ";
-            }
-            file << std::endl;
-        }
-        file.close();
-        std::cout << "数独问题已保存到文件：" << filename << std::endl;
-    }
-    else {
-        std::cout << "无法保存数独问题到文件：" << filename << std::endl;
-    }
-}
-
-// 从文件加载数独问题
-std::vector<std::vector<int>> loadSudokuFromFile(const std::string& filename) {
-    std::vector<std::vector<int>> board;
-    std::ifstream file(filename);
-    if (file.is_open()) {
-        int num;
-        while (file >> num) {
-            std::vector<int> row;
-            row.push_back(num);
-            for (int i = 1; i < SIZE; i++) {
-                file >> num;
-                row.push_back(num);
-            }
-            board.push_back(row);
-        }
-        file.close();
-        std::cout << "从文件加载数独问题成功：" << filename << std::endl;
-    }
-    else {
-        std::cout << "无法从文件加载数独问题：" << filename << std::endl;
-    }
+    inFile.close();
     return board;
 }
 
+void writeBoardToFile(const std::vector<std::vector<std::vector<char>>>& res_v, const std::string& filePath) {
+    std::ofstream outFile(filePath, std::ios::app);
+    if (!outFile) {
+        std::cerr << "Error: Failed to open file for writing." << std::endl;
+        return;
+    }
+
+    for (const auto& board : res_v) {
+        for (const auto& row : board) {
+            for (char cell : row) {
+                outFile << cell << '$';
+            }
+            outFile << '\n';
+        }
+        outFile << '\n';
+    }
+
+    outFile.close();
+}
+class SudokuSolver{
+public:
+    bool solve(std::string s){
+      std::vector<std::vector<char>> board(9,std::vector<char>(9,'.'));
+      for(int i=0;i<9;++i){
+          for(int j=0;j<9;++j){
+              board[i][j]=s[i*9+j];
+          }
+      }
+      return solveSudoku(board);
+    }
+   
+
+private:
+    bool solveSudoku(std::vector<std::vector<char>>& board){
+      return dfs(board,0,0);
+    }
+
+    bool dfs(std::vector<std::vector<char>>& board,int row,int col){
+      if(col==9){
+          return dfs(board,row+1,0);
+      }
+      if(row==9){
+          return true;
+      }
+      if(board[row][col]!='.'){
+          return dfs(board,row,col+1);
+      }
+      for(int i=1;i<=9;++i){
+          if(!isValid(board,row,col,i+'0')){
+              continue;
+          }
+          board[row][col]=i+'0';
+          if(dfs(board,row,col+1)){
+              return true;
+          }
+          board[row][col]='.';
+      }
+      return false;
+    }
+
+    bool isValid(std::vector<std::vector<char>>& board,int row,int col,char c){
+      for(int i=0;i<9;++i){
+          if(board[i][col]==c){
+              return false;
+          }
+          if(board[row][i]==c){
+              return false;
+          }
+          if(board[(row/3)*3+i/3][(col/3)*3+i%3]==c){
+              return false;
+          }
+      }
+      return true;
+    }
+
+};
+
+class SudokuGenerator {
+public:
+  int difficulty;
+    SudokuGenerator(int difficulty) {
+        
+            this->difficulty = difficulty;
+    
+    }
+	void digHoles(std::vector<std::vector<char>>& board, int numHoles) {
+    srand(time(0));
+    int count = 0;
+     
+    while (count < numHoles) {
+        int row = rand() % 9;
+        int col = rand() % 9;
+        if (board[row][col] != '.') {
+            board[row][col] = '.';
+            count++;
+       	 }
+   	 }
+	}
+    std::vector<std::vector<char>> generate() {
+        std::vector<std::vector<char>> board(9, std::vector<char>(9, '.'));
+        solveSudoku(board);
+
+        return board;
+    }
+      std::vector<std::vector<char>> generate_game() {
+        std::vector<std::vector<char>> board(9, std::vector<char>(9, '.'));
+        solveSudoku(board);
+        digHoles(board,this->difficulty);
+
+        return board;
+    }
+bool isUnique(std::vector<std::vector<char>>& board){
+      std::string s="";
+      for(auto row:board){
+          for(auto cell:row){
+              s+=cell;
+          }
+      }
+      SudokuSolver solver;
+      return solver.solve(s);
+    }
+
+   
+
+    void solveSudoku(std::vector<std::vector<char>>& board) {
+        dfs(board, 0, 0);
+    }
+
+    bool dfs(std::vector<std::vector<char>>& board, int row, int col) {
+        if (col == 9) {
+            return dfs(board, row + 1, 0);
+        }
+        if (row == 9) {
+            return true;
+        }
+        if (board[row][col] != '.') {
+            return dfs(board, row, col + 1);
+        }
+        std::vector<int> nums{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        std::shuffle(nums.begin(), nums.end(), std::random_device());
+        for (int i : nums) {
+            if (!isValid(board, row, col, i + '0')) {
+                continue;
+            }
+            board[row][col] = i + '0';
+            if (dfs(board, row, col + 1)) {
+                return true;
+            }
+            board[row][col] = '.';
+        }
+        return false;
+    }
+
+    bool isValid(std::vector<std::vector<char>>& board, int row, int col, char c) {
+        for (int i = 0; i < 9; ++i) {
+            if (board[i][col] == c) {
+                return false;
+            }
+            if (board[row][i] == c) {
+                return false;
+            }
+            if (board[(row / 3) * 3 + i / 3][(col / 3) * 3 + i % 3] == c) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    
+
+};
+
+
 int main(int argc, char* argv[]) {
-    std::vector<std::vector<int>> board;
+    int numSudokuEndgames = 0; // 数独终盘数量
+    std::string sudokuBoardFilePath; // 数独棋盘文件路径
+    int numGames = 0; // 游戏数量
+    int difficulty = 1; // 游戏难度
+    int numHolesRange = 20; // 挖空数量范围
+    bool uniqueSolution = false; // 游戏解唯一
 
-    if (argc < 3) {
-        std::cout << "参数不足，请参考正确的参数格式：" << std::endl;
-        std::cout << "生成数独终盘示例：sudoku.exe -c 20" << std::endl;
-        std::cout << "求解数独游戏示例：sudoku.exe -s game.txt" << std::endl;
-        std::cout << "生成数独游戏示例：sudoku.exe -n 1000 -m 1 -r 20~55 -u" << std::endl;
-        return 1;
-    }
-
-    std::string option = argv[1];
-
-    if (option == "-c") {
-        if (argc != 3) {
-            std::cout << "参数不正确，请参考正确的参数格式：" << std::endl;
-            std::cout << "生成数独终盘示例：sudoku.exe -c 20" << std::endl;
-            return 1;
-        }
-
-        int num = std::atoi(argv[2]);
-        for (int i = 0; i < num; i++) {
-            board.clear();
-            generateSudoku(board);
-            std::string filename = "sudoku_" + std::to_string(i) + ".txt";
-            saveSudokuToFile(board, filename);
-        }
-    }
-    else if (option == "-s") {
-        if (argc != 3) {
-            std::cout << "参数不正确，请参考正确的参数格式：" << std::endl;
-            std::cout << "求解数独游戏示例：sudoku.exe -s game.txt" << std::endl;
-            return 1;
-        }
-
-        std::string filename = argv[2];
-        std::vector<std::vector<int>> problem = loadSudokuFromFile(filename);
-        std::cout << "数独问题：" << std::endl;
-        printSudoku(problem);
-
-        solveSudoku(problem);
-
-        // 将求解结果保存到文件
-        saveSudokuToFile(problem, "sudoku_solution.txt");
-
-        std::cout << "数独问题的解已保存到文件：sudoku_solution.txt" << std::endl;
-    }
-    else if (option == "-n") {
-        if (argc < 4 || argc > 8) {
-            std::cout << "参数不正确，请参考正确的参数格式：" << std::endl;
-            std::cout << "生成数独游戏示例：sudoku.exe -n 1000 -m 1 -r 20~55 -u" << std::endl;
-            return 1;
-        }
-
-        int numGames = std::atoi(argv[2]);
-
-        int difficulty = -1;
-        int numHoles = -1;
-        bool uniqueSolution = false;
-
-        for (int i = 3; i < argc; i++) {
-            std::string arg = argv[i];
-            if (arg == "-m") {
-                if (i + 1 < argc) {
-                    difficulty = std::atoi(argv[i + 1]);
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-c") { // 处理 -c 选项
+            if (i + 1 < argc) {
+                numSudokuEndgames = std::atoi(argv[++i]);
+                if (numSudokuEndgames < 1 || numSudokuEndgames > 1000000) {
+                    std::cerr << "错误：-c 选项的值无效。值必须在 1 到 1000000 之间。" << std::endl;
+                    return -1;
                 }
-                else {
-                    std::cout << "参数不正确，请提供难度级别（1-3）：" << std::endl;
-                    return 1;
-                }
+            } else {
+                std::cerr << "错误：-c 选项需要一个参数。" << std::endl;
+                return -1;
             }
-            else if (arg == "-r") {
-                if (i + 1 < argc) {
-                    std::string range = argv[i + 1];
-                    size_t pos = range.find("~");
-                    if (pos != std::string::npos) {
-                        std::string minStr = range.substr(0, pos);
-                        std::string maxStr = range.substr(pos + 1);
-                        int minHoles = std::atoi(minStr.c_str());
-                        int maxHoles = std::atoi(maxStr.c_str());
-                        if (minHoles >= MIN_HOLES && maxHoles <= MAX_HOLES && minHoles <= maxHoles) {
-                            numHoles = std::rand() % (maxHoles - minHoles + 1) + minHoles;
-                        }
-                        else {
-                            std::cout << "参数不正确，请提供有效的挖洞范围（20-55）：" << std::endl;
-                            return 1;
-                        }
-                    }
-                    else {
-                        std::cout << "参数不正确，请提供有效的挖洞范围（20-55）：" << std::endl;
-                        return 1;
-                    }
-                }
-                else {
-                    std::cout << "参数不正确，请提供挖洞范围（20-55）：" << std::endl;
-                    return 1;
-                }
+        } else if (arg == "-s") { // 处理 -s 选项
+            if (i + 1 < argc) {
+                sudokuBoardFilePath = argv[++i];
+            } else {
+                std::cerr << "错误：-s 选项需要一个参数。" << std::endl;
+                return -1;
             }
-            else if (arg == "-u") {
-                uniqueSolution = true;
+        } else if (arg == "-n") { // 处理 -n 选项
+            if (i + 1 < argc) {
+                numGames = std::atoi(argv[++i]);
+                if (numGames < 1 || numGames > 10000) {
+                    std::cerr << "错误：-n 选项的值无效。值必须在 1 到 10000 之间。" << std::endl;
+                    return -1;
+                }
+            } else {
+                std::cerr << "错误：-n 选项需要一个参数。" << std::endl;
+                return -1;
             }
-        }
-
-        if (difficulty < 1 || difficulty > 3) {
-            std::cout << "参数不正确，请提供有效的难度级别（1-3）：" << std::endl;
-            return 1;
-        }
-
-        for (int i = 0; i < numGames; i++) {
-            board.clear();
-            generateSudoku(board);
-            std::string filename = "sudoku_game_" + std::to_string(i) + ".txt";
-            saveSudokuToFile(board, filename);
+        } else if (arg == "-m") { // 处理 -m 选项
+            if (i + 1 < argc) {
+                difficulty = std::atoi(argv[++i]);
+                if (difficulty < 1 || difficulty > 3) {
+                    std::cerr << "错误：-m 选项的值无效。值必须在 1 到 3 之间。" << std::endl;
+                    return -1;
+                }
+            } else {
+                std::cerr << "错误：-m 选项需要一个参数。" << std::endl;
+                return -1;
+            }
+        } else if (arg == "-r") { // 处理 -r 选项
+            if (i + 1 < argc) {
+                numHolesRange = std::atoi(argv[++i]);
+                if (numHolesRange < 20 || numHolesRange > 55) {
+                    std::cerr << "错误：-r 选项的值无效。值必须在 20 到 55之间。" << std::endl;
+                    return -1;
+                }
+            } else {
+                std::cerr << "错误：-r 选项需要一个参数。" << std::endl;
+                return -1;
+            }
+        } else if (arg == "-u") { // 处理 -u 选项
+            uniqueSolution = true;
         }
     }
-    else {
-        std::cout << "无效的选项，请参考正确的参数格式：" << std::endl;
-        std::cout << "生成数独终盘示例：sudoku.exe -c 20" << std::endl;
-        std::cout << "求解数独游戏示例：sudoku.exe -s game.txt" << std::endl;
-        std::cout << "生成数独游戏示例：sudoku.exe -n 1000 -m 1 -r 20~55 -u" << std::endl;
-        return 1;
+    if ((uniqueSolution && numGames == 0) ) {
+    std::cerr << "错误： -n 选项只能和-u 和同时使用。" << std::endl;
+    return -1;
+}
+SudokuGenerator generator(0);
+
+generator.difficulty=(int)(numHolesRange/difficulty);
+
+
+
+std::vector<std::vector<std::vector<char>>> res_v;
+    srand(time(0));
+
+    if(numSudokuEndgames){
+while (numSudokuEndgames--) {
+    auto res = generator.generate();
+    res_v.push_back(res);
+}
+writeBoardToFile(res_v,"棋盘.txt");
     }
+
+std::vector<std::vector<std::vector<char>>> res_v2;
+if(numGames){
+    while (numGames--)
+    {
+
+        auto res = generator.generate_game();
+        while (!generator.isUnique(res))
+        {
+          res = generator.generate_game();
+        }
+        
+        res_v2.push_back(res);
+        
+    }
+    writeBoardToFile(res_v2,"游戏.txt");
+}
+std::vector<std::vector<std::vector<char>>> res_v3;
+
+if(sudokuBoardFilePath!=""){
+    auto res = readBoardFromFile(sudokuBoardFilePath);
+    generator.solveSudoku(res);
+    res_v3.push_back(res);
+}
+    writeBoardToFile(res_v3,"题解.txt");
 
     return 0;
 }
+
+
 
