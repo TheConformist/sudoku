@@ -227,7 +227,9 @@ int main(int argc, char* argv[]) {
     std::string sudokuBoardFilePath; // 数独棋盘文件路径
     int numGames = 0; // 游戏数量
     int difficulty = 1; // 游戏难度
-    int numHolesRange = 20; // 挖空数量范围
+    int numHolesRangeMin = 20; // 挖空数量下限
+    int numHolesRangeMax = 55; // 挖空数量上限
+    int numHoles = 20;
     bool uniqueSolution = false; // 游戏解唯一
 
     for (int i = 1; i < argc; i++) {
@@ -294,13 +296,13 @@ int main(int argc, char* argv[]) {
                     std::cerr << "错误： -r 选项只能和-n 和同时使用。" << std::endl;
                     return -1;
                 }
-                if (numHolesRange < 20 || numHolesRange > 55) {
+                if (numHolesRangeMin < 20 || numHolesRangeMax > 55) {
                     std::cerr << "错误：-r 选项的值无效。值必须在 20 到 55之间。" << std::endl;
                     return -1;
                 }
                 std::random_device rd;   // 随机设备
                 std::mt19937 gen(rd());  // 随机数引擎
-                int numHoles = std::uniform_int_distribution<int> dis(min, max);  // 均匀分布
+                numHoles = std::uniform_int_distribution<int> dis(min, max);  // 均匀分布
 
             }
             else {
