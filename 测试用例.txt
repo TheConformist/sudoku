@@ -1,0 +1,24 @@
+测试用例1：sukudo.exe -c 20
+测试用例2-1：sukudo.exe -c 0
+测试用例2-2:sukudo.exe -c 1000001
+测试用例3：sukudo.exe -c
+测试用例4：sukudo.exe -s 游戏.txt
+测试用例5：sukudo.exe -s
+测试用例6：sukudo.exe -n 10
+测试用例7：sukudo.exe -n 10001
+测试用例8：sukudo.exe -n
+测试用例9：sukudo.exe -n 2 -m 1
+测试用例10：sukudo.exe -n 2 -m 2
+测试用例11：sukudo.exe -m 1
+测试用例12-1：sukudo.exe -n 2 -m 0
+测试用例12-2：sukudo.exe -n 2 -m 5
+测试用例13：sukudo.exe -n 2 -m
+测试用例14：sukudo.exe -n 2 -r 20
+测试用例15：sukudo.exe -n 2 -r 30
+测试用例16：sukudo.exe -r 30
+测试用例17-1：sukudo.exe -n 2 -r 1
+测试用例17-2：sukudo.exe -n 2 -r 60
+测试用例18：sukudo.exe -n 2 -r
+测试用例19：sukudo.exe -n 2 -u
+测试用例20：sukudo.exe -u
+测试用例21：sukudo.exe -s 1.txt
